@@ -1,0 +1,9 @@
+# Data
+#path: C:/Users/fwern/seadrive_root/f.werner/Meine Bibliotheken/yolo_training_data/dataset0
+path: coco_converted
+train: images/train  # train images (relative to 'path')
+val: images/val
+# Classes
+names:
+  0: linse
+
