@@ -10,7 +10,7 @@ if "output" not in filenames:
 image_filenames = []
 if len(filenames) != 0:
     for file in filenames:
-        if file.endswith(".jpg"):
+        if file.endswith(".jpg") or file.endswith(".jpeg"):
             image_filenames.append(file)
 else:
     print("keine Bilder gefunden, Bilder im Format .bmp gespeichert?")
@@ -25,9 +25,9 @@ if __name__ == "__main__":
 
         img = cv2.medianBlur(img,5)
 
-        radius1 = 280
-        xc = 460
-        yc = 582
+        radius1 = 876
+        xc = 565+radius1
+        yc = 1834
         mask = np.zeros_like(img)
 
         mask = cv2.circle(mask, (xc,yc), radius1, 255, -1)
@@ -47,8 +47,9 @@ if __name__ == "__main__":
         org_image = cv2.imread(image_filename)
         org_image[th1 == 0] = (255,0,0)
         cv2.imwrite(os.path.join("output", f"{image_filename.split('.')[0]}_masked.jpg"), org_image)
+        th1_small = cv2.resize(th1, (int(th1.shape[1]/4), int(th1.shape[0]/4)), interpolation= cv2.INTER_LINEAR)
         cv2.namedWindow("th1")
-        cv2.imshow("th1", th1)
+        cv2.imshow("th1", th1_small)
         cv2.waitKey(0)
 
     with open(os.path.join("output", 'output.csv'), mode='w', newline='') as f:
