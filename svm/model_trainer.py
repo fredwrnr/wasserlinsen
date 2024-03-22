@@ -60,10 +60,8 @@ def read_all_images_in_folder():
 
 
 def make_dataset():
-    drawing = False
-    pt1_x, pt1_y = None, None
+
     def on_mouse(event, x, y, flags, param):
-        global pt1_x,pt1_y,drawing
         if param == "mark_plant":
             color = (0, 255, 0)
         else:
