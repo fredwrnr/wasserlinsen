@@ -25,12 +25,11 @@ if __name__ == "__main__":
 
         img = cv2.medianBlur(img,5)
 
-        radius1 = 876
-        xc = 565+radius1
-        yc = 1834
-        mask = np.zeros_like(img)
 
-        mask = cv2.circle(mask, (xc,yc), radius1, 255, -1)
+        mask = np.zeros_like(img)
+        pt1 = (1150,580)
+        pt2 = (3000,2410)
+        mask = cv2.rectangle(mask, pt1, pt2, 255, -1)
 
         img[mask==0] = 255
         masked_img = img
@@ -38,8 +37,8 @@ if __name__ == "__main__":
         ret,th1 = cv2.threshold(masked_img,180,255,cv2.THRESH_BINARY)
 
         plant_area = np.count_nonzero(th1==0)
-        circular_area = 3.14 * radius1**2
-        plant_area_percentage = plant_area / circular_area * 100
+        rect_area = pt2[0]-pt1[0] * pt2[1] - pt1[1]
+        plant_area_percentage = plant_area / rect_area * 100
 
         results.append((plant_area, round(plant_area_percentage,2)))
 
