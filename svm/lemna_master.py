@@ -174,26 +174,34 @@ class LemnaMaster:
 
         image_mask = self.delete_small_blobs(image_mask, 50)
 
-        plant_area = np.count_nonzero(image_mask != 0)
-        image_area = image.shape[0] * image.shape[1]
+        image_area = image_mask.shape[0] * image_mask.shape[1]
+
+        plant_area = np.sum(np.all(image_mask == [255, 0, 0], axis=-1))
+        dead_plant_area = np.sum(np.all(image_mask == [0, 0, 255], axis=-1))
+        background_area = np.sum(np.all(image_mask == [0, 0, 0], axis=-1))
+
         plant_area_percentage = round(plant_area / image_area * 100, 2)
-        print(plant_area_percentage)
+        dead_plant_area_percentage = round(dead_plant_area / image_area * 100, 2)
+        background_area_percentage = round(background_area / image_area * 100, 2)
+        print(f"plant_area_percentage: {plant_area_percentage}")
+        print(f"dead_plant_area_percentage: {dead_plant_area_percentage}")
+        print(f"background_area_percentage: {background_area_percentage}")
 
         blended = cv2.addWeighted(image, 0.5, image_mask, 0.5, 0)
 
         stacked_image = np.concatenate([image, image_mask, blended], axis=1)
-        self.save_inference_result(image_path, stacked_image, plant_area_percentage)
+        self.save_inference_result(image_path, stacked_image, plant_area_percentage, dead_plant_area_percentage)
 
-        return cv2.cvtColor(stacked_image, cv2.COLOR_BGR2RGB), plant_area_percentage
+        return cv2.cvtColor(stacked_image, cv2.COLOR_BGR2RGB), plant_area_percentage, dead_plant_area_percentage
 
-    def save_inference_result(self, image_path, stacked_image, plant_area_percentage, dead_area_percentage=None):
+    def save_inference_result(self, image_path, stacked_image, plant_area_percentage, dead_area_percentage):
         os.makedirs("output", exist_ok=True)
-        image_name = image_path.split('.')[-2]
+        image_name = os.path.split(image_path.split('.')[-2])[-1]
         cv2.imwrite(os.path.join("output", f"{image_name}_output.jpg"), stacked_image)
         if not os.path.isfile("output.csv"):
             with open(os.path.join("output", 'output.csv'), mode='w', newline='') as f:
                 writer = csv.writer(f, delimiter=',')
-                writer.writerow(['Filename', 'Lemna Area [%]'])
+                writer.writerow(['Filename', 'Lemna Area [%]', 'Dead Lemna Area [%]'])
         else:
             with open(os.path.join("output", 'output.csv'), mode='a', newline='') as f:
                 writer = csv.writer(f, delimiter=',')

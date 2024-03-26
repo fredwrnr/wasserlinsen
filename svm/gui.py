@@ -147,7 +147,7 @@ class AppGUI:
             if self.inference_cancelled:
                 break  # Stop processing if cancellation is requested
             print(f"Processing {image_path}")
-            output_image, plant_percentage = self.lemna_master.run_inference_on_image(
+            output_image, plant_percentage, _ = self.lemna_master.run_inference_on_image(
                 os.path.join(folder_path, image_path))
             self.update_gui_after_inference(output_image, plant_percentage, i, len(files_to_test))
 
