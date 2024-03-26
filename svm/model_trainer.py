@@ -13,6 +13,9 @@ import time
 pt1 = (1150,580)    # x,y
 pt2 = (3000,2410)
 
+folder = os.listdir()
+if "output" not in folder:
+    os.mkdir("output")
 
 def delete_small_blobs(image, size_threshold):
     """
@@ -49,23 +52,24 @@ def delete_small_blobs(image, size_threshold):
     return output_image
 
 
-def read_all_images_in_folder():
-    filenames = os.listdir()
+def read_all_images_in_folder(path=None):
+    filenames = os.listdir(path)
     image_filenames = []
     if len(filenames) != 0:
         for file in filenames:
-            if file.endswith(".jpg") or file.endswith(".jpeg"):
+            if file.endswith(".jpg") or file.endswith(".jpeg") or file.endswith(".png"):
                 image_filenames.append(file)
     return image_filenames
 
 
-def make_dataset():
-
+def make_dataset(folder, with_bad = False):
     def on_mouse(event, x, y, flags, param):
         if param == "mark_plant":
             color = (0, 255, 0)
-        else:
+        elif param == "mark_background":
             color = (255, 0, 0)
+        else:
+            color = (0,0,255)
 
         if event == cv2.EVENT_LBUTTONDOWN or (event == cv2.EVENT_MOUSEMOVE and flags == cv2.EVENT_FLAG_LBUTTON):
             image[y-2:y+2,x-2:x+2] = color
@@ -75,54 +79,61 @@ def make_dataset():
                 for pixel in row:
                     if param == "mark_plant":
                         plant_pixels.append(pixel)
-                    else:
+                    elif param == "mark_background":
                         background_pixels.append(pixel)
+                    else:
+                        bad_plant_pixels.append(pixel)
 
 
     plant_pixels = []
     background_pixels = []
-    for i, filename in enumerate(read_all_images_in_folder()):
-        if filename != "image0.jpeg" and filename != "image3.jpeg":
-            continue
+    bad_plant_pixels = []
+    for i, filename in enumerate(read_all_images_in_folder(folder)):
+        image = cv2.imread(os.path.join(folder, filename))
+        image = image[pt1[1]:pt2[1], pt1[0]:pt2[0]]  # get only center
+        image = cv2.resize(image, dsize=(image.shape[1] // 2, image.shape[0] // 2), interpolation=cv2.INTER_CUBIC)
 
-        image = cv2.imread(filename)
-        image = cv2.resize(image, dsize=(image.shape[1] // 4, image.shape[0] // 4), interpolation=cv2.INTER_CUBIC)
-        image = image[pt1[1] // 4:pt2[1] // 4, pt1[0] // 4:pt2[0] // 4]
         cie_image = cv2.cvtColor(image, cv2.COLOR_BGR2Lab)
 
-        cv2.namedWindow("mark_plant", cv2.WINDOW_FULLSCREEN)
-        cv2.setMouseCallback('mark_plant', on_mouse, "mark_plant")
+        cv2.namedWindow("Bitte (gesunde) Wasserlinsen markieren", cv2.WINDOW_FULLSCREEN)
+        cv2.setMouseCallback('Bitte (gesunde) Wasserlinsen markieren', on_mouse, "mark_plant")
         while True:
-            cv2.imshow("mark_plant", image)
-            if cv2.waitKey(1) & 0xFF == 27:
+            cv2.imshow("Bitte (gesunde) Wasserlinsen markieren", image)
+            if cv2.waitKey(1) & 0xFF == 32:
                 break
         cv2.destroyAllWindows()
 
-        cv2.namedWindow("mark_background", cv2.WINDOW_FULLSCREEN)
-        cv2.setMouseCallback('mark_background', on_mouse, "mark_background")
+        if with_bad:
+            cv2.namedWindow("Bitte tote Wasserlinsen markieren", cv2.WINDOW_FULLSCREEN)
+            cv2.setMouseCallback('Bitte tote Wasserlinsen markieren', on_mouse, "mark_bad")
+            while True:
+                cv2.imshow("Bitte tote Wasserlinsen markieren", image)
+                if cv2.waitKey(1) & 0xFF == 32:
+                    break
+            cv2.destroyAllWindows()
+
+        cv2.namedWindow("Bitte Hintergrund markieren", cv2.WINDOW_FULLSCREEN)
+        cv2.setMouseCallback('Bitte Hintergrund markieren', on_mouse, "mark_background")
         while True:
-            cv2.imshow("mark_background", image)
-            if cv2.waitKey(1) & 0xFF == 27:
+            cv2.imshow("Bitte Hintergrund markieren", image)
+            if cv2.waitKey(1) & 0xFF == 32:
                 break
         cv2.destroyAllWindows()
+
+
 
     for i, pixel in enumerate(plant_pixels):
         plant_pixels[i] = pixel + [1]
+    for i, pixel in enumerate(bad_plant_pixels):
+        bad_plant_pixels[i] = pixel + [2]
     for i, pixel in enumerate(background_pixels):
         background_pixels[i] = pixel + [0]
-    with open(f'dataset_test.csv', "w", newline='') as file:
-        write = csv.writer(file)
-        write.writerows(plant_pixels)
-        write.writerows(background_pixels)
+
+    return plant_pixels + bad_plant_pixels + background_pixels
 
 
-def train_svm():
-    data = []
-    with open("dataset.csv", mode='r', encoding='utf-8') as csv_file:
-        reader = csv.reader(csv_file)
-        for row in reader:
-            data.append(row)
-
+def train_svm(folder, with_bad):
+    data = make_dataset(folder, with_bad)
     train, test = train_test_split(data, test_size=0.2, random_state=1)
 
     train_x = [row[:3] for row in train]  # Features: First three columns
@@ -134,19 +145,23 @@ def train_svm():
     model.fit(train_x, train_y)
 
     pred = model.predict(test_x)
-    print(classification_report(test_y, pred))
-
-    with open(f'svc_model.sav', 'wb') as f:
+    rep = classification_report(test_y, pred, output_dict=True)
+    print(rep)
+    classes = 3 if with_bad else 2
+    with open(f'svc_model_{classes}classes.sav', 'wb') as f:
         # Pickle the 'data' dictionary using the highest protocol available.
         pickle.dump(model, f)
+    return model, f'svc_model_{classes}classes.sav', rep["accuracy"]
+
+def load_model(path):
+    return pickle.load(open(path, 'rb'))
 
 
-def main():
-    loaded_model = pickle.load(open("svc_model.sav", 'rb'))
-
-    for i, filename in enumerate(read_all_images_in_folder()):
-        print(filename)
-        image = cv2.imread(filename)
+def run_inference(loaded_model, files_path, folder):
+    #loaded_model = pickle.load(open(model_path, 'rb'))
+    print(files_path)
+    for i, filename in enumerate(files_path):
+        image = cv2.imread(os.path.join(folder, filename))
         image = image[pt1[1]:pt2[1], pt1[0]:pt2[0]]  # get only center
         image = cv2.resize(image, dsize=(image.shape[1] // 8, image.shape[0] // 8), interpolation=cv2.INTER_CUBIC)
         cie_image = cv2.cvtColor(image, cv2.COLOR_BGR2Lab)
@@ -157,21 +172,27 @@ def main():
             for y in range(height):
                 pixel = [cie_image[y, x]]
                 result = loaded_model.predict(pixel)
-                if result == "1":
-
+                if result[0] == 1:
                     image_mask[y, x] = [255, 0, 0]
-                else:
+                elif result[0] == 0:
                     image_mask[y, x] = [0, 0, 0]
+                elif result[0] == 2:
+                    image_mask[y, x] = [0, 0, 255]
 
         image_mask = delete_small_blobs(image_mask, 50)
+
+        plant_area = np.count_nonzero(image_mask != 0)
+        image_area = image.shape[0] * image.shape[1]
+        plant_area_percentage = round(plant_area / image_area * 100, 2)
+        print(plant_area_percentage)
+
         blended = cv2.addWeighted(image, 0.5, image_mask, 0.5, 0)
-        cv2.namedWindow("org_image", cv2.WINDOW_NORMAL)
-        cv2.imshow("org_image", image)
-        cv2.namedWindow("mask", cv2.WINDOW_NORMAL)
-        cv2.imshow("mask", image_mask)
-        cv2.namedWindow("blended", cv2.WINDOW_NORMAL)
-        cv2.imshow("blended", blended)
-        cv2.waitKey(0)
+
+        stacked_image = np.concatenate([image, image_mask, blended], axis=1)
+        cv2.imwrite(os.path.join("output", f"{filename.split('.')[-2]}_output.jpg"), stacked_image)
+
+        yield cv2.cvtColor(stacked_image, cv2.COLOR_BGR2RGB)#, plant_area_percentage
+
 
 
 if __name__ == "__main__":
