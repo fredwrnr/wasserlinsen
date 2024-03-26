@@ -157,41 +157,40 @@ def load_model(path):
     return pickle.load(open(path, 'rb'))
 
 
-def run_inference(loaded_model, files_path, folder):
+def run_inference(loaded_model, path):
     #loaded_model = pickle.load(open(model_path, 'rb'))
-    print(files_path)
-    for i, filename in enumerate(files_path):
-        image = cv2.imread(os.path.join(folder, filename))
-        image = image[pt1[1]:pt2[1], pt1[0]:pt2[0]]  # get only center
-        image = cv2.resize(image, dsize=(image.shape[1] // 8, image.shape[0] // 8), interpolation=cv2.INTER_CUBIC)
-        cie_image = cv2.cvtColor(image, cv2.COLOR_BGR2Lab)
-        width = cie_image.shape[1]
-        height = cie_image.shape[0]
-        image_mask = cie_image.copy()
-        for x in tqdm(range(width)):
-            for y in range(height):
-                pixel = [cie_image[y, x]]
-                result = loaded_model.predict(pixel)
-                if result[0] == 1:
-                    image_mask[y, x] = [255, 0, 0]
-                elif result[0] == 0:
-                    image_mask[y, x] = [0, 0, 0]
-                elif result[0] == 2:
-                    image_mask[y, x] = [0, 0, 255]
+    print(path)
+    image = cv2.imread(path)
+    image = image[pt1[1]:pt2[1], pt1[0]:pt2[0]]  # get only center
+    image = cv2.resize(image, dsize=(image.shape[1] // 8, image.shape[0] // 8), interpolation=cv2.INTER_CUBIC)
+    cie_image = cv2.cvtColor(image, cv2.COLOR_BGR2Lab)
+    width = cie_image.shape[1]
+    height = cie_image.shape[0]
+    image_mask = cie_image.copy()
+    for x in tqdm(range(width)):
+        for y in range(height):
+            pixel = [cie_image[y, x]]
+            result = loaded_model.predict(pixel)
+            if result[0] == 1:
+                image_mask[y, x] = [255, 0, 0]
+            elif result[0] == 0:
+                image_mask[y, x] = [0, 0, 0]
+            elif result[0] == 2:
+                image_mask[y, x] = [0, 0, 255]
 
-        image_mask = delete_small_blobs(image_mask, 50)
+    image_mask = delete_small_blobs(image_mask, 50)
 
-        plant_area = np.count_nonzero(image_mask != 0)
-        image_area = image.shape[0] * image.shape[1]
-        plant_area_percentage = round(plant_area / image_area * 100, 2)
-        print(plant_area_percentage)
+    plant_area = np.count_nonzero(image_mask != 0)
+    image_area = image.shape[0] * image.shape[1]
+    plant_area_percentage = round(plant_area / image_area * 100, 2)
+    print(plant_area_percentage)
 
-        blended = cv2.addWeighted(image, 0.5, image_mask, 0.5, 0)
+    blended = cv2.addWeighted(image, 0.5, image_mask, 0.5, 0)
 
-        stacked_image = np.concatenate([image, image_mask, blended], axis=1)
-        cv2.imwrite(os.path.join("output", f"{filename.split('.')[-2]}_output.jpg"), stacked_image)
+    stacked_image = np.concatenate([image, image_mask, blended], axis=1)
+    cv2.imwrite(os.path.join("output", f"{path.split('.')[-2]}_output.jpg"), stacked_image)
 
-        yield cv2.cvtColor(stacked_image, cv2.COLOR_BGR2RGB)#, plant_area_percentage
+    return cv2.cvtColor(stacked_image, cv2.COLOR_BGR2RGB), plant_area_percentage
 
 
 

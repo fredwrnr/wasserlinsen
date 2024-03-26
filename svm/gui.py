@@ -6,7 +6,7 @@ import os
 import glob
 from PIL import Image, ImageTk
 import threading
-from threaded_generator import ThreadedGenerator
+
 
 def get_first_model_path(directory, extension=".sav"):
     """Search for the first model file with the specified extension in the given directory."""
@@ -115,18 +115,15 @@ class AppGUI:
             files_to_test = model_trainer.read_all_images_in_folder(folder_path)
             self.root.config(cursor="watch")
             self.root.update()
-            #for i, image_path in enumerate(files_to_test):
-
-            gen = ThreadedGenerator(model_trainer.run_inference(self.model, files_to_test, folder_path))
-            for output_image in gen:
-                #print(f"Processing {image_path}")
-                #output_image, plant_percentage = model_trainer.run_inference(self.model, os.path.join(folder_path, image_path))
-                #self.plant_area_label["text"] = f"Pflanzenfläche: {plant_percentage} %"
+            for i, image_path in enumerate(files_to_test):
+                print(f"Processing {image_path}")
+                output_image, plant_percentage = model_trainer.run_inference(self.model, os.path.join(folder_path, image_path))
+                self.plant_area_label["text"] = f"Pflanzenfläche: {plant_percentage} %"
                 self.display_image(output_image)
                 # Update progress in GUI
-                #progress = int((i + 1) / len(files_to_test) * 100)
-                #app.update_progress(progress)
-                self.root.config(cursor="")
+                progress = int((i + 1) / len(files_to_test) * 100)
+                app.update_progress(progress)
+            self.root.config(cursor="")
             messagebox.showinfo("Inference Complete", "Inference has been run successfully.")
         else:
             messagebox.showwarning("Inference Aborted", "No folder selected for inference.")
