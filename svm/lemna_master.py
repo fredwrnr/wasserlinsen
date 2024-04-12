@@ -60,7 +60,7 @@ class LemnaMaster:
         image_filenames = []
         if len(filenames) != 0:
             for file in filenames:
-                if file.endswith(".jpg") or file.endswith(".jpeg") or file.endswith(".png"):
+                if file.endswith(".jpg") or file.endswith(".jpeg") or file.endswith(".png") or file.endswith(".JPG") or file.endswith(".PNG"):
                     image_filenames.append(file)
         return image_filenames
 
@@ -198,14 +198,15 @@ class LemnaMaster:
         os.makedirs("output", exist_ok=True)
         image_name = os.path.split(image_path.split('.')[-2])[-1]
         cv2.imwrite(os.path.join("output", f"{image_name}_output.jpg"), stacked_image)
-        if not os.path.isfile("output.csv"):
+        if not os.path.isfile(os.path.join("output", "output.csv")):
             with open(os.path.join("output", 'output.csv'), mode='w', newline='') as f:
                 writer = csv.writer(f, delimiter=',')
                 writer.writerow(['Filename', 'Lemna Area [%]', 'Dead Lemna Area [%]'])
-        else:
-            with open(os.path.join("output", 'output.csv'), mode='a', newline='') as f:
-                writer = csv.writer(f, delimiter=',')
-                writer.writerow([image_name, plant_area_percentage, dead_area_percentage])
+
+        with open(os.path.join("output", 'output.csv'), mode='a', newline='') as f:
+            writer = csv.writer(f, delimiter=',')
+            print(f"saving results: {plant_area_percentage}")
+            writer.writerow([image_name, plant_area_percentage, dead_area_percentage])
 
 
 if __name__ == "__main__":

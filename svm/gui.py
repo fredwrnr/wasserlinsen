@@ -24,7 +24,8 @@ class AppGUI:
         # Search for .sav files in the current directory and use the first one found
         self.current_directory = os.getcwd()
         self.model_path = get_first_model_path(self.current_directory, ".sav")
-        self.lemna_master.load_model(self.model_path)
+        if self.model_path:
+            self.lemna_master.load_model(self.model_path)
 
         # Button to select a different model
         self.change_model_btn = tk.Button(root, text="Select Model", command=self.change_model)
@@ -137,7 +138,7 @@ class AppGUI:
             self.root.update_idletasks()
 
             self.root.config(cursor="watch")
-            threading.Thread(target=self.inference_thread, args=(inference_folder_path,)).start()
+            threading.Thread(target=self.inference_thread, daemon=True, args=(inference_folder_path,)).start()
             self.root.config(cursor="")
 
     def inference_thread(self, folder_path):
