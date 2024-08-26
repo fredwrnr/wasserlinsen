@@ -11,9 +11,14 @@ import time
 
 
 class LemnaMaster:
-    def __init__(self):
-        self.pt1 = (1150,580)    # x,y
-        self.pt2 = (3000,2410)
+    def __init__(self, image_outline_points: dict):
+
+        # self.pt1 = (1150,580)    # x,y
+        # self.pt2 = (3000,2410)
+        self.pt1 = image_outline_points["p1"]
+        self.pt2 = image_outline_points["p2"]
+        print(self.pt1)
+        print(self.pt2)
         self.loaded_model = None
 
     def load_model(self, model_path):

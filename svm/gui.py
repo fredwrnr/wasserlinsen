@@ -19,11 +19,37 @@ class AppGUI:
         self.root = root
         root.title("Lemna-Master5000")
 
-        self.lemna_master = lemna_master.LemnaMaster()
+        self.current_directory = os.getcwd()
+        # Search for file in current directory with name config.txt
+        config_path = os.path.join(self.current_directory, "config.txt")
+        self.image_outline_points = None
+        if os.path.isfile(config_path):
+            with open(config_path) as f:
+                # Read the contents of the file into a variable
+                content = f.readlines()
+                try:
+                    p1 = tuple([int(p) for p in content[0].split(",")])
+                    p2 = tuple([int(p) for p in content[1].split(",")])
+                    if len(p1) > 2 or len(p2) > 2:
+                        messagebox.showinfo("Fehler",
+                                            f"config.txt konnte nicht gelesen werden. \n-muss im gleichen Ordner wie .exe liegen\n-sollte folgendes Format haben: \n   p1_x,p1_y\n   p2_x,p2_y\n(Ganze Zahlen und mit Komma getrennt)")
+                        exit()
+                    self.image_outline_points = {"p1": p1, "p2": p2}
+                except ValueError:
+                    messagebox.showinfo("Fehler",
+                                        f"config.txt konnte nicht gelesen werden. \n-muss im gleichen Ordner wie .exe liegen\n-sollte folgendes Format haben: \n   p1_x,p1_y\n   p2_x,p2_y\n(Ganze Zahlen und mit Komma getrennt)")
+                    exit()
+        else:
+            messagebox.showinfo("Fehler",
+                                f"config.txt konnte nicht gefunden werden. \n-muss im gleichen Ordner wie .exe liegen\n-sollte folgendes Format haben: \n   p1_x,p1_y\np   p2_x,p2_y")
+            exit()
+
+
+        self.lemna_master = lemna_master.LemnaMaster(self.image_outline_points)
 
         # Search for .sav files in the current directory and use the first one found
-        self.current_directory = os.getcwd()
-        self.model_path = get_first_model_path(self.current_directory, ".sav")
+        model_files = glob.glob(os.path.join(self.current_directory, "*.sav"))
+        self.model_path = model_files[0] if model_files else None
         if self.model_path:
             self.lemna_master.load_model(self.model_path)
 
