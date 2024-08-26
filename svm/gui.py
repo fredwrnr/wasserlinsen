@@ -32,16 +32,16 @@ class AppGUI:
                     p2 = tuple([int(p) for p in content[1].split(",")])
                     if len(p1) > 2 or len(p2) > 2:
                         messagebox.showinfo("Fehler",
-                                            f"config.txt konnte nicht gelesen werden. \n-muss im gleichen Ordner wie .exe liegen\n-sollte folgendes Format haben: \n   p1_x,p1_y\n   p2_x,p2_y\n(Ganze Zahlen und mit Komma getrennt)")
+                                            f"config.txt konnte nicht gelesen werden. \n -> sollte folgendes Format haben: \n   p1_x,p1_y\n   p2_x,p2_y\n(Ganze Zahlen und mit Komma getrennt)")
                         exit()
                     self.image_outline_points = {"p1": p1, "p2": p2}
                 except ValueError:
                     messagebox.showinfo("Fehler",
-                                        f"config.txt konnte nicht gelesen werden. \n-muss im gleichen Ordner wie .exe liegen\n-sollte folgendes Format haben: \n   p1_x,p1_y\n   p2_x,p2_y\n(Ganze Zahlen und mit Komma getrennt)")
+                                        f"config.txt konnte nicht gelesen werden. \n -> sollte folgendes Format haben: \n   p1_x,p1_y\n   p2_x,p2_y\n(Ganze Zahlen und mit Komma getrennt)")
                     exit()
         else:
             messagebox.showinfo("Fehler",
-                                f"config.txt konnte nicht gefunden werden. \n-muss im gleichen Ordner wie .exe liegen\n-sollte folgendes Format haben: \n   p1_x,p1_y\np   p2_x,p2_y")
+                                f"config.txt konnte nicht gefunden werden. \n -> muss im gleichen Ordner wie .exe liegen")
             exit()
 
 
