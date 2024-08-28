@@ -121,7 +121,7 @@ class AppGUI:
             #self.train_folder_label.config(text=f"Training folder: {folder_path}")
 
             model, path, accuracy = self.lemna_master.train_svm(folder_path, self.toggle_state.get())
-            self.model = model  # Update the current model
+            self.lemna_master.load_model(path)  # Update the current model
             self.model_label.config(text=f"Current Model: {path}")
             messagebox.showinfo("Training Complete\n", f"The model has been trained and saved successfully. \n"
                                                        f"Overall Accuracy: {round(accuracy*100, 2)}%")
