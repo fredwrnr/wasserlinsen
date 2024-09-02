@@ -102,7 +102,7 @@ class LemnaMaster:
 
             cie_image = cv2.cvtColor(image, cv2.COLOR_BGR2Lab)
 
-            cv2.namedWindow("Bitte (gesunde) Wasserlinsen markieren", cv2.WINDOW_FULLSCREEN)
+            cv2.namedWindow("Bitte (gesunde) Wasserlinsen markieren", cv2.WINDOW_NORMAL)
             cv2.setMouseCallback('Bitte (gesunde) Wasserlinsen markieren', on_mouse, "mark_plant")
             while True:
                 cv2.imshow("Bitte (gesunde) Wasserlinsen markieren", image)
@@ -111,7 +111,7 @@ class LemnaMaster:
             cv2.destroyAllWindows()
 
             if with_bad:
-                cv2.namedWindow("Bitte tote Wasserlinsen markieren", cv2.WINDOW_FULLSCREEN)
+                cv2.namedWindow("Bitte tote Wasserlinsen markieren", cv2.WINDOW_NORMAL)
                 cv2.setMouseCallback('Bitte tote Wasserlinsen markieren', on_mouse, "mark_bad")
                 while True:
                     cv2.imshow("Bitte tote Wasserlinsen markieren", image)
@@ -119,7 +119,7 @@ class LemnaMaster:
                         break
                 cv2.destroyAllWindows()
 
-            cv2.namedWindow("Bitte Hintergrund markieren", cv2.WINDOW_FULLSCREEN)
+            cv2.namedWindow("Bitte Hintergrund markieren", cv2.WINDOW_NORMAL)
             cv2.setMouseCallback('Bitte Hintergrund markieren', on_mouse, "mark_background")
             while True:
                 cv2.imshow("Bitte Hintergrund markieren", image)
