@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import filedialog, ttk
 from tkinter import messagebox
+import cv2
+import numpy as np
 import lemna_master
 import os
 import glob
@@ -92,6 +94,30 @@ class AppGUI:
 
         self.image_label = tk.Label(self.frame)
         self.image_label.pack()
+
+        self.place_dummy_image()
+
+    def place_dummy_image(self):
+        dummy_height = 230  # Adjust these dimensions as needed
+        dummy_width = 900  # This is 3x width since we show 3 images side by side
+        self.dummy_image = np.ones((dummy_height, dummy_width, 3), dtype=np.uint8) * 210  # Light gray background
+
+        # Add text to the dummy image
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        text = "Output..."
+        font_scale = 2
+        thickness = 2
+        text_size = cv2.getTextSize(text, font, font_scale, thickness)[0]
+
+        # Calculate text position to center it
+        text_x = (dummy_width - text_size[0]) // 2
+        text_y = (dummy_height + text_size[1]) // 2
+
+        cv2.putText(self.dummy_image, text, (text_x, text_y), font, font_scale, (128, 128, 128), thickness)
+
+        # Convert to RGB for display
+        self.dummy_image = cv2.cvtColor(self.dummy_image, cv2.COLOR_BGR2RGB)
+        self.display_image(self.dummy_image)
 
     def request_stop_inference(self):
         self.inference_cancelled = True
@@ -202,6 +228,6 @@ class AppGUI:
 if __name__ == "__main__":
     root = tk.Tk()
 
-    root.geometry("800x600")
+    root.geometry("1000x600")
     app = AppGUI(root)
     root.mainloop()

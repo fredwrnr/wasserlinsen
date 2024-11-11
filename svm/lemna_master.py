@@ -161,43 +161,53 @@ class LemnaMaster:
     def run_inference_on_image(self, image_path):
         image = cv2.imread(image_path)
         image = image[self.pt1[1]:self.pt2[1], self.pt1[0]:self.pt2[0]]  # get only center
-        image = cv2.resize(image, dsize=(image.shape[1] // 8, image.shape[0] // 8), interpolation=cv2.INTER_CUBIC)
+        image = cv2.resize(image, dsize=(image.shape[1] // 4, image.shape[0] // 4), interpolation=cv2.INTER_CUBIC)
         cie_image = cv2.cvtColor(image, cv2.COLOR_BGR2Lab)
-        width = cie_image.shape[1]
-        height = cie_image.shape[0]
-        image_mask = cie_image.copy()
-        for x in tqdm(range(width)):
-            for y in range(height):
-                pixel = [cie_image[y, x]]
-                result = self.loaded_model.predict(pixel)
-                if result[0] == 1:
-                    image_mask[y, x] = [255, 0, 0]
-                elif result[0] == 0:
-                    image_mask[y, x] = [0, 0, 0]
-                elif result[0] == 2:
-                    image_mask[y, x] = [0, 0, 255]
 
-        image_mask = self.delete_small_blobs(image_mask, 50)
+        # Convert image to a list of pixels for batch prediction
+        pixels = cie_image.reshape(-1, 3)
 
+        # Perform batch prediction instead of pixel-by-pixel
+        results = self.loaded_model.predict(pixels)
+
+        # Create the mask using numpy operations instead of pixel-by-pixel assignments
+        image_mask = np.zeros_like(cie_image)
+
+        # Reshape results back to image dimensions
+        results = results.reshape(cie_image.shape[0], cie_image.shape[1])
+
+        # Use boolean indexing for faster assignments
+        image_mask[results == 1] = [255, 0, 0]
+        image_mask[results == 0] = [0, 0, 0]
+        image_mask[results == 2] = [0, 0, 255]
+
+        image_mask = self.delete_small_blobs(image_mask, 20)
+
+        # Use numpy's sum and boolean operations for faster area calculations
         image_area = image_mask.shape[0] * image_mask.shape[1]
+        plant_mask = np.all(image_mask == [255, 0, 0], axis=-1)
+        dead_mask = np.all(image_mask == [0, 0, 255], axis=-1)
+        background_mask = np.all(image_mask == [0, 0, 0], axis=-1)
 
-        plant_area = np.sum(np.all(image_mask == [255, 0, 0], axis=-1))
-        dead_plant_area = np.sum(np.all(image_mask == [0, 0, 255], axis=-1))
-        background_area = np.sum(np.all(image_mask == [0, 0, 0], axis=-1))
+        plant_area = np.sum(plant_mask)
+        dead_plant_area = np.sum(dead_mask)
+        background_area = np.sum(background_mask)
 
         plant_area_percentage = round(plant_area / image_area * 100, 2)
         dead_plant_area_percentage = round(dead_plant_area / image_area * 100, 2)
         background_area_percentage = round(background_area / image_area * 100, 2)
+
         print(f"plant_area_percentage: {plant_area_percentage}")
         print(f"dead_plant_area_percentage: {dead_plant_area_percentage}")
         print(f"background_area_percentage: {background_area_percentage}")
 
         blended = cv2.addWeighted(image, 0.5, image_mask, 0.5, 0)
-
         stacked_image = np.concatenate([image, image_mask, blended], axis=1)
+
         self.save_inference_result(image_path, stacked_image, plant_area_percentage, dead_plant_area_percentage)
 
-        return cv2.cvtColor(stacked_image, cv2.COLOR_BGR2RGB), plant_area_percentage, dead_plant_area_percentage
+        small_stacked_image = cv2.resize(stacked_image, dsize=(stacked_image.shape[1] // 2, stacked_image.shape[0] // 2), interpolation=cv2.INTER_CUBIC)
+        return cv2.cvtColor(small_stacked_image, cv2.COLOR_BGR2RGB), plant_area_percentage, dead_plant_area_percentage
 
     def save_inference_result(self, image_path, stacked_image, plant_area_percentage, dead_area_percentage):
         os.makedirs("output", exist_ok=True)
